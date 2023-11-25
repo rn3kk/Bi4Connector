@@ -8,6 +8,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_executable(Bi4Connector src/main.cpp
   src/Peer.h src/Peer.cpp
   src/TaskHandler.h src/TaskHandler.cpp
+  src/Logger.h
+  src/Logger.cpp
 
 
 )
