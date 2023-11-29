@@ -3,18 +3,31 @@
 #include <pthread.h>
 #include <sys/epoll.h>
 
+#include "Logger.h"
 #include <algorithm>
+#include <arpa/inet.h>
+#include <cstring>
 #include <errno.h>
 #include <fcntl.h>
 #include <list>
 #include <msgpack/unpack.hpp>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <pthread.h>
 #include <set>
 #include <stdio.h>
+#include <sys/epoll.h>
+#include <sys/signal.h>
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+#define check(expr) \
+  if (!(expr)) { \
+    perror(#expr); \
+    kill(0, SIGTERM); \
+  }
 
 using namespace std;
 
@@ -96,6 +109,15 @@ void *epoll_server(void *vargp)
       perror("epoll_wait");
       exit(EXIT_FAILURE);
     }
+//    toStatusLog(tId, "Have event");
+    for (int n = 0; n < nfds; ++n) {
+      if (events[n].data.fd == listen_sock) {
+        int conn_sock = accept(listen_sock, (struct sockaddr *) &in_addr, &in_addr_len);
+        if (conn_sock >= 0)
+        {
+          char *ip = inet_ntoa(in_addr.sin_addr);
+          uint16_t port = htons(in_addr.sin_port);
+          lInfo(tId, "Input connection " + string(ip) + " " + to_string(port));
 
     for (int n = 0; n < nfds; ++n)
     {
