@@ -1,9 +1,13 @@
+#include "Peer.h"
+
 #include <pthread.h>
 #include <sys/epoll.h>
 
 #include <algorithm>
 #include <errno.h>
 #include <fcntl.h>
+#include <list>
+#include <msgpack/unpack.hpp>
 #include <netinet/in.h>
 #include <set>
 #include <stdio.h>
@@ -11,6 +15,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
+
 using namespace std;
 
 int epoll_listen = 0;
@@ -30,6 +35,7 @@ void setnonblocking(int fd) { fcntl(fd, F_SETFL, O_NONBLOCK); }
 
 void *epoll_server(void *vargp)
 {
+  std::list<Peer *> peerList;
   struct sockaddr_in addr;
   addr.sin_family = AF_INET;
   addr.sin_port = htons(3333);
@@ -109,6 +115,7 @@ void *epoll_server(void *vargp)
           perror("epoll_ctl: conn_sock");
           exit(EXIT_FAILURE);
         }
+        peerList.push_back(new Peer(conn_sock, epollfd));
       }
       else
       {

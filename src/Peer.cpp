@@ -1,7 +1,7 @@
 #include "Peer.h"
 
-Peer::Peer(std::string hash, int sock)
+Peer::Peer(int sock, int epollFd)
 {
-  m_hash = hash;
   m_sock = sock;
+  m_epollFd = epollFd;
 }
