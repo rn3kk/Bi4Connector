@@ -1,9 +1,12 @@
 #ifndef PEER_H
 #define PEER_H
 
+#include "Msg.h"
 #include <ctime>
+#include <map>
 #include <string>
 #include <vector>
+#include <msgpack/unpack.hpp>
 
 class Session;
 
@@ -23,21 +26,23 @@ class Peer
 public:
   Peer(int sock, int epollFd);
   int sock() const;
-  void handleReceivedData(char &buff, int len);
+  void handleReceivedData(char *buf, int len);
 
 private:
-  void updatePeerType();
+  void updatePeerType(char type);
+  void handleMessage(Msg msg);
+  void sendDataToRemotePeer(char *buf, int len);
 
 private:
   int m_sock = 0;
   int m_epollFd = 0;
-  std::string m_id;
-  Session *m_session = nullptr;
+
+  class Session* m_session = nullptr; //not delete in this scope. His remowing when all socketFD is closed
 
   std::time_t time_created = std::time(nullptr);
   Type m_type = UNKNOWN;
-
   std::vector<char> m_receivedData;
+  msgpack::unpacker m_unpack;
 };
 
 #endif // PEER_H
