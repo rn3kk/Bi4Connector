@@ -133,7 +133,7 @@ void *epoll_server(void *vargp)
             int rbytes = read(((Peer *)events[n].data.ptr)->sock(),
                               ((Peer *)events[n].data.ptr)->getBufferPtr(),
                               ((Peer *)events[n].data.ptr)->getBufferLen());
-            lDebug(tId, "read end" +);
+            lDebug(tId, "read end");
             if (rbytes > 0) {
               ((Peer *)events[n].data.ptr)->handleReceivedData(rbytes);
             }
