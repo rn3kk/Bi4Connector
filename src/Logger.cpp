@@ -65,7 +65,7 @@ void *loggerThread(void* vargp)
       consoleQueue.pop();
       printf(data.c_str());
     }
-    usleep(10000);
+    usleep(1000);
   }
   f.close();
   return nullptr;

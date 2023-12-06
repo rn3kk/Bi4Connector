@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 
 project(Bi4Connector LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(Bi4Connector src/main.cpp
@@ -11,6 +11,11 @@ add_executable(Bi4Connector src/main.cpp
   src/Logger.h
   src/Logger.cpp
   src/Session.h src/Session.cpp
+  src/IdController.h src/IdController.cpp
+  src/Msg.cpp
+  src/Msg.h
+  src/Server.h
+  src/Server.cpp
 
 
 )
