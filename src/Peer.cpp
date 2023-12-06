@@ -29,22 +29,13 @@ void Peer::updatePeerType()
   {
   case RADIO_BOX:
     m_type = RADIO_BOX;
-    break;
-  case RADIO_BOX_CONTROL:
-    m_type = RADIO_BOX_CONTROL;
-    break;
+    break;  
   case PC_CLIENT:
     m_type = PC_CLIENT;
-    break;
-  case PC_CLIENT_CONTROL:
-    m_type = PC_CLIENT_CONTROL;
-    break;
+    break;  
   case MOBILE_CLIENT:
     m_type = MOBILE_CLIENT;
-    break;
-  case MOBILE_CLIENT_CONTROL:
-    m_type = MOBILE_CLIENT_CONTROL;
-    break;
+    break;  
   default:
     epoll_ctl(m_epollFd, EPOLL_CTL_DEL, m_sock, nullptr);
     close(m_sock);

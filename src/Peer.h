@@ -12,11 +12,8 @@ class Peer
   enum Type
   {
     RADIO_BOX = 0x01,
-    RADIO_BOX_CONTROL = 0x02,
     PC_CLIENT = 0x03,
-    PC_CLIENT_CONTROL = 0x04,
     MOBILE_CLIENT = 0x05,
-    MOBILE_CLIENT_CONTROL = 0x06,
     UNKNOWN = 0xFF
   };
 
