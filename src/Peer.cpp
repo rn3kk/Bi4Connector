@@ -14,6 +14,8 @@
 const int DIR_TO_BI4CONNECTOR = 9;
 const int CMD_LIC_HASH = 1;
 const int CMD_CLIENT_TYPE = 2;
+const int MSGPACK_BUF_LEN = 4096;
+const char *PEER = "Peer";
 
 extern Session* getSession(std::string sessId);
 
@@ -22,17 +24,19 @@ Peer::Peer(int sock, int epollFd)
   m_sock = sock;
   m_epollFd = epollFd;
   m_receivedData.reserve(1024 * 1024 * 2);
-  m_unpack.reserve_buffer(1024 * 1024 * 2);
+  m_unpack.reserve_buffer(MSGPACK_BUF_LEN);
+  lDebug(0, "Peer()");
 }
+
+Peer::~Peer() { lDebug(0, "~Peer()"); }
 
 int Peer::sock() const
 {
   return m_sock;
 }
 
-void Peer::handleReceivedData(char *buf, int len)
+void Peer::handleReceivedData(int len)
 {
-  memcpy(m_unpack.buffer(), buf, len);
   m_unpack.buffer_consumed(len);
   msgpack::object_handle oh;
   while (m_unpack.next(oh)) {
@@ -46,6 +50,10 @@ void Peer::handleReceivedData(char *buf, int len)
     }
   }
 }
+
+char *Peer::getBufferPtr() { return m_unpack.buffer(); }
+
+int Peer::getBufferLen() { return MSGPACK_BUF_LEN; }
 
 void Peer::updatePeerType(char type)
 {
@@ -68,7 +76,9 @@ void Peer::updatePeerType(char type)
 
 void Peer::handleMessage(Msg msg)
 {
-  lDebug(0, "receive msg");
+  lDebug(0, "receive msg ");
+  lDebug(0, msg.to_string());
+
   if (msg.dir == DIR_TO_BI4CONNECTOR) {
     if (msg.cmd == CMD_LIC_HASH){
       if(!m_session){

@@ -40,7 +40,7 @@ void intit_server(int count_thread)
 
   struct sockaddr_in addr;
   addr.sin_family = AF_INET;
-  addr.sin_port = htons(3333);
+  addr.sin_port = htons(7002);
   addr.sin_addr.s_addr = INADDR_ANY;
   socklen_t adr_len = sizeof(addr);
 
@@ -84,11 +84,14 @@ void *epoll_server(void *vargp)
 
   struct epoll_event events[MAX_EVENTS];
   struct epoll_event ev = {0};
-  ev.events = EPOLLIN | EPOLLEXCLUSIVE;
+  ev.events = EPOLLIN | EPOLLEXCLUSIVE | EPOLLET;
   ev.data.fd = listen_sock;
   if (epoll_ctl(epollfd, EPOLL_CTL_ADD, listen_sock, &ev) == -1) {
-    error("epoll_ctl: listen_sock");
-    exit(EXIT_FAILURE);
+    if (errno != EEXIST)
+    {
+      error("epoll_ctl: listen_sock");
+      exit(EXIT_FAILURE);
+    }
   }
 
   struct sockaddr_in in_addr;
@@ -126,9 +129,13 @@ void *epoll_server(void *vargp)
         } else {
           char buf[512];
           while (1) {
-            int rbytes = read(((Peer *) events[n].data.ptr)->sock(), &buf, 512);
+            lDebug(tId, "read start");
+            int rbytes = read(((Peer *)events[n].data.ptr)->sock(),
+                              ((Peer *)events[n].data.ptr)->getBufferPtr(),
+                              ((Peer *)events[n].data.ptr)->getBufferLen());
+            lDebug(tId, "read end" +);
             if (rbytes > 0) {
-              ((Peer *) events[n].data.ptr)->handleReceivedData(buf, rbytes);
+              ((Peer *)events[n].data.ptr)->handleReceivedData(rbytes);
             }
             if (errno == EAGAIN) {
               ev.events = EPOLLIN | EPOLLET | EPOLLONESHOT;

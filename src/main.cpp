@@ -18,20 +18,8 @@ extern void *epoll_server(void *vargp);
 extern void intit_server();
 
 int main(int argc, char *argv[])
-{  
-//  std::vector<char> s;
-//  for(int i = 0; i< 5; ++i)
-//  {
-//    s.push_back('G');
-//  }
-//  char *str = "Hello world";
-//  int len = strlen(str);
-//  int nowSize = s.size();
-//  s.resize(nowSize + len);
-
-//  memcpy(s.data() + nowSize, str, len);
-
-  int n = 3;
+{
+  int n = 6;
   intit_server(n);
   pthread_t serverThreadId[n];
   for (size_t i = 0; i < n; i++)

@@ -22,8 +22,13 @@ class Peer
 
 public:
   Peer(int sock, int epollFd);
+  ~Peer();
+
   int sock() const;
-  void handleReceivedData(char *buf, int len);
+  void handleReceivedData(int len);
+
+  char *getBufferPtr();
+  int getBufferLen();
 
 private:
   void updatePeerType(char type);
