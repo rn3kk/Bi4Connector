@@ -48,7 +48,7 @@ void intit_server(int count_thread)
   listen_sock = socket(AF_INET, SOCK_STREAM, 0);
   if (listen_sock < 0) {
     error("socket");
-    exit(1);
+    // exit(1);
   }
 
   const int enable = 1;
@@ -58,12 +58,12 @@ void intit_server(int count_thread)
   toStatusLog("Next start bind port");
   if (bind(listen_sock, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
     error("bind");
-    exit(2);
+    // exit(2);
   }
 
   if (listen(listen_sock, 3) < 0) {
     error("listen");
-    exit(3);
+    // exit(3);
   }
 
   fcntl(listen_sock, F_SETFL, O_NONBLOCK);
@@ -71,7 +71,7 @@ void intit_server(int count_thread)
   epollfd = epoll_create1(0);
   if (epollfd == -1) {
     error("epoll_create1");
-    exit(EXIT_FAILURE);
+    // exit(EXIT_FAILURE);
   }
 }
 
@@ -84,13 +84,13 @@ void *epoll_server(void *vargp)
 
   struct epoll_event events[MAX_EVENTS];
   struct epoll_event ev = {0};
-  ev.events = EPOLLIN | EPOLLEXCLUSIVE | EPOLLET;
+  ev.events = EPOLLIN | EPOLLEXCLUSIVE /*| EPOLLET*/;
   ev.data.fd = listen_sock;
   if (epoll_ctl(epollfd, EPOLL_CTL_ADD, listen_sock, &ev) == -1) {
     if (errno != EEXIST)
     {
       error("epoll_ctl: listen_sock");
-      exit(EXIT_FAILURE);
+      // exit(EXIT_FAILURE);
     }
   }
 
@@ -100,8 +100,9 @@ void *epoll_server(void *vargp)
   for (;;) {
     int nfds = epoll_wait(epollfd, events, MAX_EVENTS, -1);
     if (nfds == -1) {
-      error("epoll_wait");
-      exit(EXIT_FAILURE);
+      if (errno != EINTR)
+        error("epoll_wait");
+      // exit(EXIT_FAILURE);
     }
     for (int n = 0; n < nfds; ++n) {
       if (events[n].events & EPOLLIN) {
@@ -117,7 +118,7 @@ void *epoll_server(void *vargp)
             enable_keepalive(conn_sock);
             Peer *peer = new Peer(conn_sock, epollfd);
             peerList.push_back(peer);
-            ev.events = EPOLLIN | EPOLLOUT | EPOLLET | EPOLLONESHOT;
+            ev.events = EPOLLIN | EPOLLOUT | EPOLLET | /*EPOLLONESHOT | */EPOLLEXCLUSIVE;
             ev.data.ptr = peer;
             if (epoll_ctl(epollfd, EPOLL_CTL_ADD, conn_sock, &ev) == -1) {
               perror("epoll_ctl: conn_sock");
@@ -134,23 +135,30 @@ void *epoll_server(void *vargp)
                               ((Peer *)events[n].data.ptr)->getBufferPtr(),
                               ((Peer *)events[n].data.ptr)->getBufferLen());
             lDebug(tId, "read end");
+            lDebug(tId, "read bytes: " + std::to_string(rbytes) + " errno: " + std::to_string(errno));
             if (rbytes > 0) {
               ((Peer *)events[n].data.ptr)->handleReceivedData(rbytes);
             }
-            if (errno == EAGAIN) {
-              ev.events = EPOLLIN | EPOLLET | EPOLLONESHOT;
-              ev.data.ptr = events[n].data.ptr;
-              if (epoll_ctl(epollfd, EPOLL_CTL_MOD, ((Peer *) events[n].data.ptr)->sock(), &ev)
-                  == -1) {
-                error("epoll_ctl: events[n].data.fd");
-                exit(EXIT_FAILURE);
+            else
+            {
+              if (errno == EAGAIN) {
+                ev.events = EPOLLIN | EPOLLET | /*EPOLLONESHOT |*/ EPOLLEXCLUSIVE;
+                ev.data.ptr = events[n].data.ptr;
+                // if (epoll_ctl(epollfd, EPOLL_CTL_MOD, ((Peer *) events[n].data.ptr)->sock(), &ev)
+                //     == -1) {
+                //   error("epoll_ctl: events[n].data.fd");
+                //   exit(EXIT_FAILURE);
+                // }
               }
+              else
+                lDebug(tId, "errno: " + std::to_string(errno));
               break;
             }
           }
         }
-      } else if (events[n].events & (EPOLLRDHUP | EPOLLHUP)) {
-        lInfo(tId, "connection closed ");
+      }
+      if (events[n].events & (EPOLLRDHUP | EPOLLHUP)) {
+        lInfo(tId, "connection closed " + std::to_string(((Peer *)events[n].data.ptr)->sock()));
         epoll_ctl(epollfd, EPOLL_CTL_DEL, events[n].data.fd, NULL);
         close(events[n].data.fd);
       }

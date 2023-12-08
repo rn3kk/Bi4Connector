@@ -1,6 +1,7 @@
 #ifndef IDCONTROLLER_H
 #define IDCONTROLLER_H
 
+#include <cstdint>
 #include <set>
 #include <string>
 
