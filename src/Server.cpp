@@ -61,7 +61,8 @@ void intit_server(int count_thread)
     // exit(2);
   }
 
-  if (listen(listen_sock, 3) < 0) {
+  if (listen(listen_sock, 35) < 0)
+  {
     error("listen");
     // exit(3);
   }
@@ -118,7 +119,8 @@ void *epoll_server(void *vargp)
             enable_keepalive(conn_sock);
             Peer *peer = new Peer(conn_sock, epollfd);
             peerList.push_back(peer);
-            ev.events = EPOLLIN | EPOLLOUT | EPOLLET | /*EPOLLONESHOT | */EPOLLEXCLUSIVE;
+            ev.events =
+                EPOLLIN | EPOLLOUT | /*EPOLLET |*/ EPOLLONESHOT /*| EPOLLEXCLUSIVE*/;
             ev.data.ptr = peer;
             if (epoll_ctl(epollfd, EPOLL_CTL_ADD, conn_sock, &ev) == -1) {
               perror("epoll_ctl: conn_sock");
@@ -127,28 +129,38 @@ void *epoll_server(void *vargp)
           } else if (errno == EAGAIN) {
             lError(tId, "Server thread ***FAILED*** to proccess accept with EAGAIN");
           }
+          else
+          {
+            lDebug(tId, "Accept return < 0 errno= " + to_string(errno));
+          }
         } else {
-          char buf[512];
-          while (1) {
-            lDebug(tId, "read start");
+          char buf[4096];
+          lDebug(tId, "read start sock: " +
+                          std::to_string(((Peer *)events[n].data.ptr)->sock()));
+          while (1)
+          {
             int rbytes = read(((Peer *)events[n].data.ptr)->sock(),
                               ((Peer *)events[n].data.ptr)->getBufferPtr(),
                               ((Peer *)events[n].data.ptr)->getBufferLen());
-            lDebug(tId, "read end");
+            //            int rbytes = read(((Peer *)events[n].data.ptr)->sock(),
+            //            buf, 4096);
             lDebug(tId, "read bytes: " + std::to_string(rbytes) + " errno: " + std::to_string(errno));
-            if (rbytes > 0) {
-              ((Peer *)events[n].data.ptr)->handleReceivedData(rbytes);
+            if (rbytes > 0)
+            {
+              ((Peer *)events[n].data.ptr)->handleReceivedData(rbytes, tId);
             }
             else
             {
               if (errno == EAGAIN) {
-                ev.events = EPOLLIN | EPOLLET | /*EPOLLONESHOT |*/ EPOLLEXCLUSIVE;
+                ev.events =
+                    EPOLLIN | /*EPOLLET |*/ EPOLLONESHOT /*| EPOLLEXCLUSIVE*/;
                 ev.data.ptr = events[n].data.ptr;
-                // if (epoll_ctl(epollfd, EPOLL_CTL_MOD, ((Peer *) events[n].data.ptr)->sock(), &ev)
-                //     == -1) {
-                //   error("epoll_ctl: events[n].data.fd");
-                //   exit(EXIT_FAILURE);
-                // }
+                if (epoll_ctl(epollfd, EPOLL_CTL_MOD,
+                              ((Peer *)events[n].data.ptr)->sock(), &ev) == -1)
+                {
+                  error("epoll_ctl: events[n].data.fd");
+                  exit(EXIT_FAILURE);
+                }
               }
               else
                 lDebug(tId, "errno: " + std::to_string(errno));
@@ -177,13 +189,13 @@ void enable_keepalive(int sock)
   int yes = 1;
   check(setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &yes, sizeof(int)) != -1);
 
-  int idle = 1;
+  int idle = 15;
   check(setsockopt(sock, IPPROTO_TCP, TCP_KEEPIDLE, &idle, sizeof(int)) != -1);
 
-  int interval = 1;
+  int interval = 5;
   check(setsockopt(sock, IPPROTO_TCP, TCP_KEEPINTVL, &interval, sizeof(int)) != -1);
 
-  int maxpkt = 6;
+  int maxpkt = 10;
   check(setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT, &maxpkt, sizeof(int)) != -1);
 }
 

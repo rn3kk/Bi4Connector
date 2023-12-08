@@ -25,14 +25,14 @@ public:
   ~Peer();
 
   int sock() const;
-  void handleReceivedData(int len);
+  void handleReceivedData(int len, int threadId);
 
   char *getBufferPtr();
   int getBufferLen();
 
 private:
   void updatePeerType(char type);
-  void handleMessage(Msg msg);
+  void handleMessage(Msg msg, int threadId);
   void sendDataToRemotePeer(char *buf, int len);
 
 private:

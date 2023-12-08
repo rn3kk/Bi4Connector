@@ -14,7 +14,7 @@
 const int DIR_TO_BI4CONNECTOR = 9;
 const int CMD_LIC_HASH = 1;
 const int CMD_CLIENT_TYPE = 2;
-const int MSGPACK_BUF_LEN = 4096;
+const int MSGPACK_BUF_LEN = 4096 * 10;
 const char *PEER = "Peer";
 
 extern Session* getSession(std::string sessId);
@@ -25,33 +25,37 @@ Peer::Peer(int sock, int epollFd)
   m_epollFd = epollFd;
   m_receivedData.reserve(1024 * 1024 * 2);
   m_unpack.reserve_buffer(MSGPACK_BUF_LEN);
-  lDebug(0, "Peer()");
 }
 
-Peer::~Peer() { lDebug(0, "~Peer()"); }
+Peer::~Peer() {}
 
 int Peer::sock() const
 {
   return m_sock;
 }
 
-void Peer::handleReceivedData(int len)
+void Peer::handleReceivedData(int len, int threadId)
 {
   m_unpack.buffer_consumed(len);
   msgpack::object_handle oh;
-  while (m_unpack.next(oh)) {
+  while (m_unpack.next(oh))
+  {
     if (oh->type == msgpack::type::ARRAY) {
       msgpack::object_array array = oh->via.array;
       Msg msg;
       msg.dir = array.ptr[0].as<int8_t>();
       msg.cmd = array.ptr[1].as<int16_t>();
       msg.value = array.ptr[2].as<std::string>();
-      handleMessage(msg);
+      handleMessage(msg, threadId);
     }
   }
 }
 
-char *Peer::getBufferPtr() { return m_unpack.buffer(); }
+char *Peer::getBufferPtr()
+{
+  m_unpack.reserve_buffer(MSGPACK_BUF_LEN);
+  return m_unpack.buffer();
+}
 
 int Peer::getBufferLen() { return MSGPACK_BUF_LEN; }
 
@@ -69,15 +73,16 @@ void Peer::updatePeerType(char type)
     break;  
   default:
     epoll_ctl(m_epollFd, EPOLL_CTL_DEL, m_sock, nullptr);
+    lDebug(0, "next close socket " + std::to_string(m_sock));
     close(m_sock);
     break;
   }
 }
 
-void Peer::handleMessage(Msg msg)
+void Peer::handleMessage(Msg msg, int threadId)
 {
-  lDebug(0, "receive msg ");
-  lDebug(0, msg.to_string());
+  lDebug(threadId, "receive msg ");
+  lDebug(threadId, msg.to_string());
 
   if (msg.dir == DIR_TO_BI4CONNECTOR) {
     if (msg.cmd == CMD_LIC_HASH){

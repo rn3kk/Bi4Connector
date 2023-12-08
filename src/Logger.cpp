@@ -1,10 +1,11 @@
 #include "Logger.h"
+#include <fstream>
+#include <iostream>
+#include <mutex>
 #include <pthread.h>
 #include <queue>
-#include <iostream>
-#include <fstream>
+#include <syslog.h>
 #include <unistd.h>
-#include <mutex>
 using namespace std;
 
 static queue<string> * log_queue = nullptr;
@@ -37,6 +38,9 @@ void destroyLogger()
 
 void addMessage(int queNum, std::string msg)
 {
+  syslog(LOG_DEBUG, std::string(std::to_string(queNum) + " " + msg).c_str());
+  return;
+
   if (queNum > queueCount)
     return;
   log_queue[queNum].push(msg);

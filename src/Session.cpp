@@ -11,10 +11,12 @@ static std::mutex sessions_edit_mutex;
 Session::Session(string radioBoxHash)
 {
   m_sessionId = radioBoxHash;
-  lInfo(0, "Session() id: " + m_sessionId);
+  //  lInfo(0, "Session() id: " + m_sessionId);
 }
 
-Session::~Session() { lInfo(0, "~Session() id: " + m_sessionId); }
+Session::~Session()
+{ /*lInfo(0, "~Session() id: " + m_sessionId);*/
+}
 
 std::string Session::sessionId() const
 {

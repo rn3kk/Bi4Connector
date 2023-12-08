@@ -19,7 +19,7 @@ extern void intit_server();
 
 int main(int argc, char *argv[])
 {
-  int n = 6;
+  int n = 9;
   intit_server(n);
   pthread_t serverThreadId[n];
   for (size_t i = 0; i < n; i++)
