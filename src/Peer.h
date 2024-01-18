@@ -21,7 +21,7 @@ class Peer
   };
 
 public:
-  Peer(int sock, int epollFd);
+  Peer(int sock, int epollFd, char *ip, uint16_t port);
   ~Peer();
 
   int sock() const;
@@ -32,14 +32,17 @@ public:
 
 private:
   void updatePeerType(char type);
-  void handleMessage(Msg msg, int threadId);
+  void handleMessage(const Msg &msg, int threadId);
   void sendDataToRemotePeer(char *buf, int len);
 
 private:
   int m_sock = 0;
   int m_epollFd = 0;
+  uint16_t m_port = 0;
+  std::string m_ip;
 
-  class Session* m_session = nullptr; //not delete in this scope. His remowing when all socketFD is closed
+  class Session *m_session =
+      nullptr; // not delete in this scope. His remowing when all socketFD is closed
 
   std::time_t time_created = std::time(nullptr);
   Type m_type = UNKNOWN;

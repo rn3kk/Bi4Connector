@@ -7,7 +7,7 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
-//#include <arpa/inet.h>
+// #include <arpa/inet.h>
 #include <cstring>
 #include <errno.h>
 #include <fcntl.h>
@@ -26,17 +26,17 @@ void setnonblocking(int fd);
 void enable_keepalive(int sock);
 void error(const char *msg);
 
-#define check(expr) \
-  if (!(expr)) { \
-    perror(#expr); \
-    kill(0, SIGTERM); \
+#define check(expr)                                                                 \
+  if (!(expr))                                                                      \
+  {                                                                                 \
+    perror(#expr);                                                                  \
+    kill(0, SIGTERM);                                                               \
   }
 
 void intit_server(int count_thread)
 {
   int n = count_thread;
-  initLogger(n);
-  toStatusLog("App is start");
+  lInfo(-1, "App is start");
 
   struct sockaddr_in addr;
   addr.sin_family = AF_INET;
@@ -44,9 +44,10 @@ void intit_server(int count_thread)
   addr.sin_addr.s_addr = INADDR_ANY;
   socklen_t adr_len = sizeof(addr);
 
-  toStatusLog("Next start listen port");
+  lDebug(-1, "Next start listen port");
   listen_sock = socket(AF_INET, SOCK_STREAM, 0);
-  if (listen_sock < 0) {
+  if (listen_sock < 0)
+  {
     error("socket");
     // exit(1);
   }
@@ -55,8 +56,9 @@ void intit_server(int count_thread)
   if (setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0)
     error("setsockopt(SO_REUSEADDR) failed");
 
-  toStatusLog("Next start bind port");
-  if (bind(listen_sock, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
+  lDebug(-1, "Next start bind port");
+  if (bind(listen_sock, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+  {
     error("bind");
     // exit(2);
   }
@@ -70,7 +72,8 @@ void intit_server(int count_thread)
   fcntl(listen_sock, F_SETFL, O_NONBLOCK);
 
   epollfd = epoll_create1(0);
-  if (epollfd == -1) {
+  if (epollfd == -1)
+  {
     error("epoll_create1");
     // exit(EXIT_FAILURE);
   }
@@ -79,15 +82,14 @@ void intit_server(int count_thread)
 void *epoll_server(void *vargp)
 {
   std::list<Peer *> peerList;
-  int tId = (size_t) vargp;
-  lDebug(tId, "Thread is start: " + to_string(tId));
-  toStatusLog(tId, "Start thread");
-
+  int tId = (size_t)vargp;
+  lDebug(tId, "Start thread");
   struct epoll_event events[MAX_EVENTS];
   struct epoll_event ev = {0};
   ev.events = EPOLLIN | EPOLLEXCLUSIVE /*| EPOLLET*/;
   ev.data.fd = listen_sock;
-  if (epoll_ctl(epollfd, EPOLL_CTL_ADD, listen_sock, &ev) == -1) {
+  if (epoll_ctl(epollfd, EPOLL_CTL_ADD, listen_sock, &ev) == -1)
+  {
     if (errno != EEXIST)
     {
       error("epoll_ctl: listen_sock");
@@ -98,42 +100,53 @@ void *epoll_server(void *vargp)
   struct sockaddr_in in_addr;
   socklen_t in_addr_len = sizeof(in_addr);
 
-  for (;;) {
+  for (;;)
+  {
     int nfds = epoll_wait(epollfd, events, MAX_EVENTS, -1);
-    if (nfds == -1) {
+    if (nfds == -1)
+    {
       if (errno != EINTR)
         error("epoll_wait");
       // exit(EXIT_FAILURE);
     }
-    for (int n = 0; n < nfds; ++n) {
-      if (events[n].events & EPOLLIN) {
+    for (int n = 0; n < nfds; ++n)
+    {
+      if (events[n].events & EPOLLIN)
+      {
         if (events[n].data.fd == listen_sock) // accept input connection
         {
-          int conn_sock = accept(listen_sock, (struct sockaddr *) &in_addr, &in_addr_len);
-          if (conn_sock >= 0) {
+          int conn_sock =
+              accept(listen_sock, (struct sockaddr *)&in_addr, &in_addr_len);
+          if (conn_sock >= 0)
+          {
             char *ip = inet_ntoa(in_addr.sin_addr);
             uint16_t port = htons(in_addr.sin_port);
             lInfo(tId, "Input connection " + string(ip) + " " + to_string(port));
 
             setnonblocking(conn_sock);
             enable_keepalive(conn_sock);
-            Peer *peer = new Peer(conn_sock, epollfd);
+            Peer *peer = new Peer(conn_sock, epollfd, ip, port);
             peerList.push_back(peer);
             ev.events =
                 EPOLLIN | EPOLLOUT | /*EPOLLET |*/ EPOLLONESHOT /*| EPOLLEXCLUSIVE*/;
             ev.data.ptr = peer;
-            if (epoll_ctl(epollfd, EPOLL_CTL_ADD, conn_sock, &ev) == -1) {
+            if (epoll_ctl(epollfd, EPOLL_CTL_ADD, conn_sock, &ev) == -1)
+            {
               perror("epoll_ctl: conn_sock");
               exit(EXIT_FAILURE);
             }
-          } else if (errno == EAGAIN) {
+          }
+          else if (errno == EAGAIN)
+          {
             lError(tId, "Server thread ***FAILED*** to proccess accept with EAGAIN");
           }
           else
           {
             lDebug(tId, "Accept return < 0 errno= " + to_string(errno));
           }
-        } else {
+        }
+        else
+        {
           char buf[4096];
           lDebug(tId, "read start sock: " +
                           std::to_string(((Peer *)events[n].data.ptr)->sock()));
@@ -142,16 +155,16 @@ void *epoll_server(void *vargp)
             int rbytes = read(((Peer *)events[n].data.ptr)->sock(),
                               ((Peer *)events[n].data.ptr)->getBufferPtr(),
                               ((Peer *)events[n].data.ptr)->getBufferLen());
-            //            int rbytes = read(((Peer *)events[n].data.ptr)->sock(),
-            //            buf, 4096);
-            lDebug(tId, "read bytes: " + std::to_string(rbytes) + " errno: " + std::to_string(errno));
+            lDebug(tId, "read bytes: " + std::to_string(rbytes) +
+                            " errno: " + std::to_string(errno));
             if (rbytes > 0)
             {
               ((Peer *)events[n].data.ptr)->handleReceivedData(rbytes, tId);
             }
             else
             {
-              if (errno == EAGAIN) {
+              if (errno == EAGAIN)
+              {
                 ev.events =
                     EPOLLIN | /*EPOLLET |*/ EPOLLONESHOT /*| EPOLLEXCLUSIVE*/;
                 ev.data.ptr = events[n].data.ptr;
@@ -169,8 +182,10 @@ void *epoll_server(void *vargp)
           }
         }
       }
-      if (events[n].events & (EPOLLRDHUP | EPOLLHUP)) {
-        lInfo(tId, "connection closed " + std::to_string(((Peer *)events[n].data.ptr)->sock()));
+      if (events[n].events & (EPOLLRDHUP | EPOLLHUP))
+      {
+        lInfo(tId, "connection closed " +
+                       std::to_string(((Peer *)events[n].data.ptr)->sock()));
         epoll_ctl(epollfd, EPOLL_CTL_DEL, events[n].data.fd, NULL);
         close(events[n].data.fd);
       }
@@ -179,10 +194,7 @@ void *epoll_server(void *vargp)
   return 0x0;
 }
 
-void setnonblocking(int fd)
-{
-  fcntl(fd, F_SETFL, O_NONBLOCK);
-}
+void setnonblocking(int fd) { fcntl(fd, F_SETFL, O_NONBLOCK); }
 
 void enable_keepalive(int sock)
 {
@@ -201,6 +213,6 @@ void enable_keepalive(int sock)
 
 void error(const char *msg)
 {
-  toStatusLog(string(msg) + " " + std::strerror(errno));
+  lError(-1, string(msg) + " " + std::strerror(errno));
   exit(1);
 }

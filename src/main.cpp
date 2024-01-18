@@ -24,16 +24,16 @@ int main(int argc, char *argv[])
   pthread_t serverThreadId[n];
   for (size_t i = 0; i < n; i++)
   {
-    toStatusLog("Create thread " + to_string(i));
+    lInfo(i, "Create thread");
     pthread_create(serverThreadId + i, 0x0, epoll_server, (void *)i);
   }
   for (int i = 0; i < n; i++)
   {
-    toStatusLog("Join thread " + to_string(i));
+    lInfo(i, "Join thread");
     pthread_join(serverThreadId[i], 0x0);
     lDebug(i, "Thread id is join end");
   }
   lInfo(0, "App is end");
-  destroyLogger();
+  //  destroyLogger();
   return (0);
 }

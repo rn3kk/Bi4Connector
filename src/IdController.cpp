@@ -30,7 +30,7 @@ uint16_t IdController::getId()
     m_idList.erase(m_idList.begin());
     return id;
   }
-  toStatusLog("Error!!! ID list is empty!");
+  //  toStatusLog("Error!!! ID list is empty!");
   return 0;
 }
 

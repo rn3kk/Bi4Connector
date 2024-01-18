@@ -8,7 +8,7 @@ using namespace std;
 class Session
 {
 public:
-  Session(string radioBoxHash);
+  Session(string_view radioBoxHash);
   ~Session();
 
 public:
@@ -17,11 +17,14 @@ public:
 
   std::string sessionId() const;
 
+  void destroyRadioPeer();
+  void destroyClentPeer();
+
 private:
   string m_sessionId;
 };
 
-Session* getSession(std::string sessId);
+Session* getSession(string_view sessId);
 void removeFDFromSession(int fd, Session* session);
 void removeFd(int fd);
 
