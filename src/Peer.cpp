@@ -38,7 +38,7 @@ int Peer::sock() const
 }
 
 void Peer::handleReceivedData(int len, int threadId)
-{
+{  
   m_unpack.buffer_consumed(len);
   msgpack::object_handle oh;
   while (m_unpack.next(oh))
@@ -132,9 +132,7 @@ void Peer::handleMessage(const Msg &msg, int threadId)
       }
       else
       {
-        lError(
-            threadId,
-            (std::string("no client for send data: ") + msg.value.data()).c_str());
+        mError(threadId, "no client for send data: " << msg.value);
       }
     }
   }

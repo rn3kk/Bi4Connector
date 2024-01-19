@@ -20,7 +20,9 @@ add_executable(Bi4Connector src/main.cpp
 
 )
 
-#include(GNUInstallDirs)
+include(FindPkgConfig)
+pkg_search_module(systemd libsystemd IMPORTED_TARGET)
+target_link_libraries(Bi4Connector PUBLIC PkgConfig::systemd)
 install(TARGETS Bi4Connector
     #LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

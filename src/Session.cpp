@@ -31,6 +31,7 @@ void Session::destroyClentPeer()
 
 Session *getSession(std::string_view sesId)
 {
+  lDebug(-1, "getSession()");
   std::lock_guard<std::mutex> guard(sessions_edit_mutex);
   try
   {
