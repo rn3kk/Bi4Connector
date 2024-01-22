@@ -28,9 +28,9 @@ void enable_keepalive(int sock);
 void error(const char *msg);
 
 #define check(expr)                                                                 \
-  if (!(expr))                                                                      \
+  if ((expr) < 0)                                                                   \
   {                                                                                 \
-    perror(#expr);                                                                  \
+    mError(-3, #expr);                                                              \
     kill(0, SIGTERM);                                                               \
   }
 
@@ -121,11 +121,8 @@ void *input_connection_server_handler(void *vargp)
       lError(-1, "Poll filed. Input connectio thread is stopped");
       break;
     }
-    else if (pollResult == 0)
-    {
-      // poll timeout
+    else if (pollResult == 0) // poll timeout
       continue;
-    }
   }
   return 0x0;
 }
@@ -167,15 +164,8 @@ void *epoll_server(void *vargp)
           {
             if (errno == EAGAIN)
             {
-              struct epoll_event ev1 = {0};
-              ev1.events = EPOLLIN | EPOLLET | EPOLLONESHOT;
-              ev1.data.ptr = events[n].data.ptr;
-              if (epoll_ctl(epollfd, EPOLL_CTL_MOD,
-                            ((Peer *)events[n].data.ptr)->sock(), &ev1) == -1)
-              {
-                error("epoll_ctl: events[n].data.fd");
-                exit(EXIT_FAILURE);
-              }
+              mDebug(tId, "Read return EAGAIN");
+              break;
             }
             else
               lDebug(tId, "123 errno: " + std::to_string(errno));
@@ -183,6 +173,16 @@ void *epoll_server(void *vargp)
           }
         }
         while (rbytes > 0);
+
+        struct epoll_event ev1 = {0};
+        ev1.events = EPOLLIN | EPOLLET | EPOLLONESHOT;
+        ev1.data.ptr = events[n].data.ptr;
+        if (epoll_ctl(epollfd, EPOLL_CTL_MOD, ((Peer *)events[n].data.ptr)->sock(),
+                      &ev1) == -1)
+        {
+          error("epoll_ctl: events[n].data.fd");
+          exit(EXIT_FAILURE);
+        }
       }
       if (events[n].events & (EPOLLRDHUP | EPOLLHUP))
       {
